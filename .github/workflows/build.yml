@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Unzip project
         run: |
-          Z=$(ls *.zip | head -n1)
+          Z=$(find . -name '*.zip' -not -path './src/*' | head -n1)
           mkdir -p src && unzip -q "$Z" -d src
           P=$(dirname "$(find src -name settings.gradle.kts | head -n1)")
           echo "PROJECT=$P" >> $GITHUB_ENV

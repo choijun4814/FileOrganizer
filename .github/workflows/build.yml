@@ -8,9 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unzip project
+        with:
+          fetch-depth: 0
+      - name: Unzip project (가장 최근에 올린 ZIP 사용)
         run: |
-          Z=$(find . -name '*.zip' -not -path './src/*' | head -n1)
+          Z=""; T=0
+          while IFS= read -r f; do
+            t=$(git log -1 --format=%ct -- "$f")
+            if [ "${t:-0}" -gt "$T" ]; then T=$t; Z=$f; fi
+          done < <(find . -name '*.zip' -not -path './src/*')
+          echo "::notice::사용한 ZIP: $Z"
           mkdir -p src && unzip -q "$Z" -d src
           P=$(dirname "$(find src -name settings.gradle.kts | head -n1)")
           echo "PROJECT=$P" >> $GITHUB_ENV

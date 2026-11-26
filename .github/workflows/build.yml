@@ -1,1 +1,33 @@
-
+name: Build APK from ZIP
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: |
+          Z=$(ls *.zip | head -n1)
+          mkdir -p src && unzip -q "$Z" -d src
+          P=$(dirname "$(find src -name settings.gradle.kts | head -n1)")
+          echo "PROJECT=$P" >> $GITHUB_ENV
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build debug APK
+        run: |
+          cd "$PROJECT"
+          gradle assembleDebug --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp app/build/outputs/apk/debug/*.apk "$GITHUB_WORKSPACE/out/"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FileOrganizer-APK
+          path: out/*.apk

@@ -24,9 +24,15 @@ jobs:
       - name: Build debug APK
         run: |
           cd "$PROJECT"
-          gradle assembleDebug --no-daemon
-          mkdir -p "$GITHUB_WORKSPACE/out"
-          cp app/build/outputs/apk/debug/*.apk "$GITHUB_WORKSPACE/out/"
+          set +e
+          gradle assembleDebug --no-daemon 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          grep -E '^e: ' build.log | sed 's#file://.*/fileorganizer/##' | head -20 | while read -r l; do echo "::error::$l"; done
+          if [ "$code" -eq 0 ]; then
+            mkdir -p "$GITHUB_WORKSPACE/out"
+            cp app/build/outputs/apk/debug/*.apk "$GITHUB_WORKSPACE/out/"
+          fi
+          exit $code
       - uses: actions/upload-artifact@v4
         with:
           name: FileOrganizer-APK
